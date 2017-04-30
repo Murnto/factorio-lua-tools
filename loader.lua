@@ -68,6 +68,27 @@ function Loader.load_data(paths)
 
         package.path = old_path
     end
+    for i = 1, #paths do
+        local old_path = package.path
+        package.path = paths[i] .. "/?.lua;" .. package.path
+
+        if lfs.attributes(paths[i] .. "/data-updates.lua") then
+            dofile(paths[i] .. "/data-updates.lua")
+        end
+
+        package.path = old_path
+    end
+    for i = 1, #paths do
+        local old_path = package.path
+        package.path = paths[i] .. "/?.lua;" .. package.path
+
+        if lfs.attributes(paths[i] .. "/data-final-fixes.lua") then
+            dofile(paths[i] .. "/data-final-fixes.lua")
+        end
+
+        package.path = old_path
+    end
+    
     Loader.data = data.raw
     data = old_data
 end
