@@ -41,6 +41,24 @@ function load_languages(path)
     end
 end
 
+local function contains(table, val)
+   for i=1, #table do
+      if table[i] == val then 
+         return true
+      end
+   end
+   return false
+end
+
+function clean_globals()
+    important = {"table", "io", "math", "debug", "package", "_G", "python", "string", "os", "coroutine", "bit32", "util", "autoplace_utils"}
+    for k, v in pairs(_G.package.loaded) do
+        if not contains(important, k) then
+            _G.package.loaded[k] = nil
+        end
+    end
+end
+
 --- Loads Factorio data files from a list of mods.
 --
 -- Paths contain a list of mods that are loaded, first one has to be core.
@@ -56,15 +74,20 @@ function Loader.load_data(paths)
         end
 
         local old_path = package.path
-        package.path = paths[i] .. "/?.lua;" .. package.path
+        package.path = paths[i] .. "/?.lua;./?.lua;" .. package.path
 
-        dofile(paths[i] .. "/data.lua")
+        if lfs.attributes(paths[i] .. "/data.lua") then
+            dofile(paths[i] .. "/data.lua")
+            clean_globals()
+        end
 
         local extended_path = "./" .. paths[i]
 
         Loader._path_substitutions["__" .. extended_path:gsub("^.*/([^/]+)/?$", "%1") .. "__"] = paths[i]
 
-        load_languages(paths[i] .. "/locale/")
+        if lfs.attributes(paths[i] .. "/locale/") then
+            load_languages(paths[i] .. "/locale/")
+        end
 
         package.path = old_path
     end
@@ -74,6 +97,7 @@ function Loader.load_data(paths)
 
         if lfs.attributes(paths[i] .. "/data-updates.lua") then
             dofile(paths[i] .. "/data-updates.lua")
+            clean_globals()
         end
 
         package.path = old_path
@@ -84,6 +108,7 @@ function Loader.load_data(paths)
 
         if lfs.attributes(paths[i] .. "/data-final-fixes.lua") then
             dofile(paths[i] .. "/data-final-fixes.lua")
+            clean_globals()
         end
 
         package.path = old_path
