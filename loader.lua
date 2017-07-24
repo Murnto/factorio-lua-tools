@@ -51,10 +51,40 @@ local function contains(table, val)
 end
 
 function clean_globals()
-    important = {"table", "io", "math", "debug", "package", "_G", "python", "string", "os", "coroutine", "bit32", "util", "autoplace_utils"}
+    important = {"settings", "table", "io", "math", "debug", "package", "_G", "python", "string", "os", "coroutine", "bit32", "util", "autoplace_utils"}
     for k, v in pairs(_G.package.loaded) do
         if not contains(important, k) then
             _G.package.loaded[k] = nil
+        end
+    end
+end
+
+function string.ends(String,End)
+   return End=='' or string.sub(String,-string.len(End))==End
+end
+
+function check_exec_settings(path)
+    if settings == nil then
+        settings = {}
+        settings.startup = {}
+    end
+
+    if lfs.attributes(path .. "/settings.lua") then
+        print(path .. "/settings.lua")
+        dofile(path .. "/settings.lua")
+    end
+    if lfs.attributes(path .. "/settings-updates.lua") then
+        print(path .. "/settings-updates.lua")
+        dofile(path .. "/settings-updates.lua")
+    end
+    
+    for type, t_val in pairs(data.raw) do
+        if string.ends(type, '-setting') then
+            for k, v in pairs(data.raw[type]) do
+                settings.startup[v.name] = {
+                    value = v.default_value
+                }
+            end
         end
     end
 end
@@ -77,6 +107,7 @@ function Loader.load_data(paths)
         package.path = paths[i] .. "/?.lua;./?.lua;" .. package.path
 
         if lfs.attributes(paths[i] .. "/data.lua") then
+            check_exec_settings(paths[i])
             dofile(paths[i] .. "/data.lua")
             clean_globals()
         end
@@ -96,6 +127,7 @@ function Loader.load_data(paths)
         package.path = paths[i] .. "/?.lua;" .. package.path
 
         if lfs.attributes(paths[i] .. "/data-updates.lua") then
+            check_exec_settings(paths[i])
             dofile(paths[i] .. "/data-updates.lua")
             clean_globals()
         end
@@ -107,6 +139,7 @@ function Loader.load_data(paths)
         package.path = paths[i] .. "/?.lua;" .. package.path
 
         if lfs.attributes(paths[i] .. "/data-final-fixes.lua") then
+            check_exec_settings(paths[i])
             dofile(paths[i] .. "/data-final-fixes.lua")
             clean_globals()
         end
